@@ -4,7 +4,7 @@ downloads any new relevant PDF it finds, and sends a phone notification via ntfy
 
 SETUP — edit these two lines before use:
 """
-MONITOR_URL = "https://natboard.edu.in/"
+MONITOR_URL = "https://natboard.edu.in/parinam/neetpg/index"
 NTFY_TOPIC = "drshubham-neetpg26-7q2m"   # e.g. shubham-neetpg26-xk93
 
 # Only notify about new PDF links whose URL or link text contains ALL of these
