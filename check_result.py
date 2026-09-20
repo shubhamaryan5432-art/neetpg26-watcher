@@ -53,7 +53,12 @@ def main():
     if "PASTE_THE_EXACT" in MONITOR_URL:
         raise SystemExit("Set MONITOR_URL at the top of this script first.")
 
-    resp = requests.get(MONITOR_URL, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    headers={
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://natboard.edu.in/",
+    }
     resp.raise_for_status()
     html = resp.text
 
@@ -73,7 +78,12 @@ def main():
         fname = os.path.join(DOWNLOAD_DIR, os.path.basename(link.split("?")[0]))
         os.makedirs(DOWNLOAD_DIR, exist_ok=True)
         try:
-            pdf_resp = requests.get(link, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+            headers={
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://natboard.edu.in/",
+            }
             pdf_resp.raise_for_status()
             with open(fname, "wb") as f:
                 f.write(pdf_resp.content)
