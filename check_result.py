@@ -4,8 +4,8 @@ downloads any new relevant PDF it finds, and sends a phone notification via ntfy
 
 SETUP — edit these two lines before use:
 """
-MONITOR_URL = "PASTE_THE_EXACT_NBEMS_NEET-PG_PAGE_URL_HERE"
-NTFY_TOPIC = "PICK_A_RANDOM_HARD_TO_GUESS_TOPIC_NAME"   # e.g. shubham-neetpg26-xk93
+MONITOR_URL = "https://natboard.edu.in/"
+NTFY_TOPIC = "drshubham-neetpg26-7q2m"   # e.g. shubham-neetpg26-xk93
 
 # Only notify about new PDF links whose URL or link text contains ALL of these
 # (case-insensitive). Loosen this list if it misses the real notice, tighten it
