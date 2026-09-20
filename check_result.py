@@ -5,7 +5,7 @@ downloads any new relevant PDF it finds, and sends a phone notification via ntfy
 SETUP — edit these two lines before use:
 """
 MONITOR_URL = "https://natboard.edu.in/parinam/neetpg/index"
-NTFY_TOPIC = "drshubham-neetpg26-7q2m"   # e.g. shubham-neetpg26-xk93
+NTFY_TOPIC = "drshubham-neetpg26-7q2m"   # the same one you set in the ntfy app
 
 # Only notify about new PDF links whose URL or link text contains ALL of these
 # (case-insensitive). Loosen this list if it misses the real notice, tighten it
@@ -20,6 +20,13 @@ from urllib.parse import urljoin
 
 STATE_FILE = "seen_pdfs.json"
 DOWNLOAD_DIR = "downloads"
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://natboard.edu.in/",
+}
 
 
 def load_seen():
@@ -43,7 +50,7 @@ def notify(message, click_url=None):
             f"https://ntfy.sh/{NTFY_TOPIC}",
             data=message.encode("utf-8"),
             headers=headers,
-            timeout=5,
+            timeout=15,
         )
     except Exception as e:
         print(f"ntfy notify failed: {e}")
@@ -53,12 +60,7 @@ def main():
     if "PASTE_THE_EXACT" in MONITOR_URL:
         raise SystemExit("Set MONITOR_URL at the top of this script first.")
 
-    headers={
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Referer": "https://natboard.edu.in/parinam/neetpg/index",
-    }
+    resp = requests.get(MONITOR_URL, timeout=30, headers=HEADERS)
     resp.raise_for_status()
     html = resp.text
 
@@ -78,12 +80,7 @@ def main():
         fname = os.path.join(DOWNLOAD_DIR, os.path.basename(link.split("?")[0]))
         os.makedirs(DOWNLOAD_DIR, exist_ok=True)
         try:
-            headers={
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Referer": "https://natboard.edu.in/parinam/neetpg/index",
-            }
+            pdf_resp = requests.get(link, timeout=30, headers=HEADERS)
             pdf_resp.raise_for_status()
             with open(fname, "wb") as f:
                 f.write(pdf_resp.content)
