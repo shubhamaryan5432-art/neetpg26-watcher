@@ -43,7 +43,7 @@ def notify(message, click_url=None):
             f"https://ntfy.sh/{NTFY_TOPIC}",
             data=message.encode("utf-8"),
             headers=headers,
-            timeout=15,
+            timeout=5,
         )
     except Exception as e:
         print(f"ntfy notify failed: {e}")
@@ -57,7 +57,7 @@ def main():
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
-    "Referer": "https://natboard.edu.in/",
+    "Referer": "https://natboard.edu.in/parinam/neetpg/index",
     }
     resp.raise_for_status()
     html = resp.text
