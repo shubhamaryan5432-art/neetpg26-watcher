@@ -5,7 +5,7 @@ name: Check NEET PG26 Result
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # every 10 minutes
+  - cron: '3,13,23,33,43,53 * * * *'   # every 10 min, offset to avoid peak load
   workflow_dispatch:          # lets you trigger it manually from the Actions tab too
 
 permissions:
