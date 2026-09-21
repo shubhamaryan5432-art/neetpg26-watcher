@@ -1,15 +1,27 @@
 """
-Checks nbe.edu.in (a mirror of NBEMS's site that isn't behind bot-detection,
-unlike natboard.edu.in) for ANY change, and pushes a phone notification via
-ntfy.sh when it changes. This watches the whole page, not just NEET-PG, so an
-unrelated update elsewhere on the page could occasionally trigger a false
-alert -- that's an acceptable trade-off for not missing the real one.
+Two-signal NEET PG26 result checker:
+
+1. PRIMARY (higher confidence): watches whether
+   https://results.natboard.edu.in/neetpg/index goes from "not found" to
+   actually loading. This is NBE's real results-portal address (reused
+   across past cycles), and it isn't bot-blocked -- it's just inactive
+   until the current cycle's result goes live.
+
+2. BACKUP (lower confidence): watches nbe.edu.in, an older mirror page,
+   for ANY change. Caveat: its NEET-PG listing hasn't been updated since
+   2022, so it may never reflect the 2026 result at all. Kept only as a
+   free extra check, not something to rely on alone.
+
+Sends a phone notification via ntfy.sh either way, but labels which
+signal fired so you know how much to trust it.
 
 SETUP -- edit this one line before use:
 """
-NTFY_TOPIC = "drshubham-neetpg26-7q2m"   # the same one you set in the ntfy app
+NTFY_TOPIC = "PASTE_YOUR_ALREADY-CHOSEN_NTFY_TOPIC_HERE"   # the same one you set in the ntfy app
 
-MONITOR_URL = "https://nbe.edu.in"
+RESULTS_URL = "https://results.natboard.edu.in/neetpg/index"
+NBE_URL = "https://nbe.edu.in"
+STATUS_FILE = "last_status.txt"
 STATE_FILE = "last_seen.txt"
 
 import requests
@@ -24,15 +36,13 @@ HEADERS = {
 
 
 def normalize(html):
-    """Strip tags to rough visible text and collapse whitespace, so trivial
-    formatting-only changes (extra spaces, etc.) don't look like real diffs."""
     text = re.sub(r"<[^>]+>", " ", html)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
 
 def notify(message, click_url=None):
-    headers = {"Title": "NBE site changed".encode("utf-8")}
+    headers = {"Title": "NEET PG26 result alert".encode("utf-8")}
     if click_url:
         headers["Click"] = click_url
     try:
@@ -46,11 +56,30 @@ def notify(message, click_url=None):
         print(f"ntfy notify failed: {e}")
 
 
-def main():
-    if "PASTE_YOUR" in NTFY_TOPIC:
-        raise SystemExit("Set NTFY_TOPIC at the top of this script first.")
+def check_results_portal():
+    """Returns (changed, status) for the real results-portal URL."""
+    try:
+        resp = requests.get(RESULTS_URL, timeout=20, headers=HEADERS, allow_redirects=True)
+        status = str(resp.status_code)
+    except Exception as e:
+        status = f"error:{e}"
 
-    resp = requests.get(MONITOR_URL, timeout=30, headers=HEADERS)
+    previous = None
+    if os.path.exists(STATUS_FILE):
+        with open(STATUS_FILE, encoding="utf-8") as f:
+            previous = f.read().strip()
+
+    changed = previous is not None and status != previous
+
+    with open(STATUS_FILE, "w", encoding="utf-8") as f:
+        f.write(status)
+
+    return changed, status, previous
+
+
+def check_nbe_page():
+    """Returns True if the nbe.edu.in mirror page's text changed."""
+    resp = requests.get(NBE_URL, timeout=30, headers=HEADERS)
     resp.raise_for_status()
     current = normalize(resp.text)
 
@@ -59,24 +88,43 @@ def main():
         with open(STATE_FILE, encoding="utf-8") as f:
             previous = f.read()
 
-    if previous is None:
-        # First-ever run: nothing to compare against yet, just save the
-        # baseline. Do NOT notify -- there's no real "change" on run 1.
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
-            f.write(current)
-        print("Baseline saved on first run. Nothing to compare yet.")
-        return
+    changed = previous is not None and current != previous
 
-    if current != previous:
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        f.write(current)
+
+    return changed
+
+
+def main():
+    if "PASTE_YOUR" in NTFY_TOPIC:
+        raise SystemExit("Set NTFY_TOPIC at the top of this script first.")
+
+    # --- Primary signal ---
+    results_changed, status, prev_status = check_results_portal()
+    if results_changed:
         notify(
-            "nbe.edu.in changed -- check if NEET PG26 result is out.",
-            click_url=MONITOR_URL,
+            f"HIGH CONFIDENCE: results.natboard.edu.in/neetpg/index changed "
+            f"({prev_status} -> {status}). Check now!",
+            click_url=RESULTS_URL,
         )
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
-            f.write(current)
-        print("Change detected, notification sent.")
+        print(f"Primary signal fired: {prev_status} -> {status}")
     else:
-        print("No change detected this run.")
+        print(f"Primary check: no change (status {status}).")
+
+    # --- Backup signal ---
+    try:
+        if check_nbe_page():
+            notify(
+                "Lower confidence: nbe.edu.in changed. May or may not be "
+                "about NEET PG26 -- worth a manual look.",
+                click_url=NBE_URL,
+            )
+            print("Backup signal fired: nbe.edu.in changed.")
+        else:
+            print("Backup check: no change on nbe.edu.in.")
+    except Exception as e:
+        print(f"Backup check failed (non-fatal): {e}")
 
 
 if __name__ == "__main__":
