@@ -17,12 +17,16 @@ signal fired so you know how much to trust it.
 
 SETUP -- edit this one line before use:
 """
-NTFY_TOPIC = "drshubham-neetpg26-7q2m"   # the same one you set in the ntfy app
+NTFY_TOPIC = "PASTE_YOUR_ALREADY-CHOSEN_NTFY_TOPIC_HERE"   # the same one you set in the ntfy app
 
 RESULTS_URL = "https://results.natboard.edu.in/neetpg/index"
 NBE_URL = "https://nbe.edu.in"
+NATBOARD_URL = "https://natboard.edu.in/index"
+PARINAM_URL = "https://natboard.edu.in/parinam/neetpg/index"
 STATUS_FILE = "last_status.txt"
 STATE_FILE = "last_seen.txt"
+STATE_FILE_NATBOARD = "last_seen_natboard.txt"
+STATE_FILE_PARINAM = "last_seen_parinam.txt"
 
 import requests
 import os
@@ -96,6 +100,50 @@ def check_nbe_page():
     return changed
 
 
+def check_natboard_index():
+    """Returns True if natboard.edu.in/index's text changed. Note: this page
+    loaded stale (2022-dated) content when last checked, so a change here is
+    a decent sign something moved, but isn't guaranteed to mean much."""
+    resp = requests.get(NATBOARD_URL, timeout=30, headers=HEADERS)
+    resp.raise_for_status()
+    current = normalize(resp.text)
+
+    previous = None
+    if os.path.exists(STATE_FILE_NATBOARD):
+        with open(STATE_FILE_NATBOARD, encoding="utf-8") as f:
+            previous = f.read()
+
+    changed = previous is not None and current != previous
+
+    with open(STATE_FILE_NATBOARD, "w", encoding="utf-8") as f:
+        f.write(current)
+
+    return changed
+
+
+def check_parinam_page():
+    """Returns True if natboard.edu.in/parinam/neetpg/index's text changed.
+    NOTE: this URL is confirmed blocked by bot detection (403) as of the
+    last check -- this function is expected to raise on most/all runs
+    until NBE's protection changes, which is outside our control. Kept
+    only in case that ever changes; do not expect this to fire."""
+    resp = requests.get(PARINAM_URL, timeout=30, headers=HEADERS)
+    resp.raise_for_status()
+    current = normalize(resp.text)
+
+    previous = None
+    if os.path.exists(STATE_FILE_PARINAM):
+        with open(STATE_FILE_PARINAM, encoding="utf-8") as f:
+            previous = f.read()
+
+    changed = previous is not None and current != previous
+
+    with open(STATE_FILE_PARINAM, "w", encoding="utf-8") as f:
+        f.write(current)
+
+    return changed
+
+
 def main():
     if "PASTE_YOUR" in NTFY_TOPIC:
         raise SystemExit("Set NTFY_TOPIC at the top of this script first.")
@@ -112,7 +160,7 @@ def main():
     else:
         print(f"Primary check: no change (status {status}).")
 
-    # --- Backup signal ---
+    # --- Backup signal 1: nbe.edu.in ---
     try:
         if check_nbe_page():
             notify(
@@ -125,6 +173,35 @@ def main():
             print("Backup check: no change on nbe.edu.in.")
     except Exception as e:
         print(f"Backup check failed (non-fatal): {e}")
+
+    # --- Backup signal 2: natboard.edu.in/index ---
+    try:
+        if check_natboard_index():
+            notify(
+                "Lower confidence: natboard.edu.in/index changed. Worth a "
+                "manual look.",
+                click_url=NATBOARD_URL,
+            )
+            print("Backup signal fired: natboard.edu.in/index changed.")
+        else:
+            print("Backup check: no change on natboard.edu.in/index.")
+    except Exception as e:
+        print(f"Backup check failed (non-fatal): {e}")
+
+    # --- Backup signal 3: natboard.edu.in/parinam/neetpg/index ---
+    # Expected to fail with 403 (bot detection) most/every run -- see docstring.
+    try:
+        if check_parinam_page():
+            notify(
+                "natboard.edu.in/parinam/neetpg/index changed (and actually "
+                "loaded this time) -- check now!",
+                click_url=PARINAM_URL,
+            )
+            print("Backup signal fired: parinam page changed.")
+        else:
+            print("Backup check: parinam page loaded, no change.")
+    except Exception as e:
+        print(f"Parinam check failed as expected (non-fatal): {e}")
 
 
 if __name__ == "__main__":
