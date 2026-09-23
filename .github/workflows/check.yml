@@ -5,7 +5,7 @@ name: Check NEET PG26 Result
 
 on:
   schedule:
-  - cron: '3,13,23,33,43,53 * * * *'   # every 10 min, offset to avoid peak load
+    - cron: '3,13,23,33,43,53 * * * *'   # every 10 min, offset to avoid peak load
   workflow_dispatch:          # lets you trigger it manually from the Actions tab too
 
 permissions:
@@ -31,6 +31,6 @@ jobs:
         run: |
           git config user.name "result-checker-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add last_seen.txt last_status.txt 2>/dev/null || true
+          git add last_seen.txt last_status.txt last_seen_natboard.txt last_seen_parinam.txt 2>/dev/null || true
           git diff --cached --quiet || git commit -m "Update state [skip ci]"
           git push
