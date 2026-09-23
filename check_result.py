@@ -17,7 +17,7 @@ signal fired so you know how much to trust it.
 
 SETUP -- edit this one line before use:
 """
-NTFY_TOPIC = "PASTE_YOUR_ALREADY-CHOSEN_NTFY_TOPIC_HERE"   # the same one you set in the ntfy app
+NTFY_TOPIC = "drshubham-neetpg26-7q2m"   # the same one you set in the ntfy app
 
 RESULTS_URL = "https://results.natboard.edu.in/neetpg/index"
 NBE_URL = "https://nbe.edu.in"
